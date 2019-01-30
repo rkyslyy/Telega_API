@@ -3,8 +3,7 @@ const database = require('../database')
 const userSchema = database.Schema({
     email: String,
     password: String,
-    firstName: String,
-    secondName: String,
+    username: String,
     avatar: String,
     publicPem: String,
     privatePem: String
