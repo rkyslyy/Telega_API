@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     if (!user.confirmed) return res.status(400).send({
         error: 'You need to confirm your email first'
     })
-    if (user.password != req.body.password) return res.status(400).send({
+    if (!bcrypt.compareSync(req.body.password, user.password)) return res.status(400).send({
         error: 'Wrong email or password'
     })
     res.send(jwt.sign({id: user._id, name: user.firstName}, 'secreto'))

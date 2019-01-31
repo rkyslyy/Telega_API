@@ -3,6 +3,7 @@ const router = Express.Router()
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
+const bcrypt = require('bcryptjs')
 
 router.get('/', async (req, res) => {
     const users = await User.find()
@@ -30,11 +31,13 @@ router.post('/', async (req, res) => {
     if (await User.findOne({ email: req.body.email })) return res.status(500).json({
         error: 'Email already registered'
     })
-    var crypto = require("crypto");
-    var confirmationHash = crypto.randomBytes(20).toString('hex');
+    const crypto = require("crypto");
+    const confirmationHash = crypto.randomBytes(20).toString('hex');
+    const salt = bcrypt.genSaltSync(10)
+    const hashedPass = bcrypt.hashSync(req.body.password, salt)
     const newUser = User({
         email: req.body.email,
-        password: req.body.password,
+        password: hashedPass,
         username: req.body.username,
         avatar: req.body.avatar,
         privatePem: req.body.privatePem,
