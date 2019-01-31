@@ -6,7 +6,8 @@ const userSchema = database.Schema({
     username: String,
     avatar: String,
     publicPem: String,
-    privatePem: String
+    privatePem: String,
+    confirmed: Boolean
 })
 
 const User = database.model('User', userSchema)
