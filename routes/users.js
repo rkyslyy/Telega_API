@@ -2,28 +2,53 @@ const Express = require('express')
 const router = Express.Router()
 const User = require('../models/user')
 const jwt = require('jsonwebtoken')
+const nodemailer = require('nodemailer')
 
 router.get('/', async (req, res) => {
     const users = await User.find()
     res.send(users)
 })
 
+router.get('/confirm', async (req, res) => {
+    // console.log(req.query)
+    const email = req.query.email
+    const hash = req.query.hash
+    const user = await User.findOne({
+        email: email
+    })
+    if (user.confHash != hash) return res.status(400).send({
+        error: 'Could not confirm user'
+    })
+    if (user.confirmed) return res.status(400).send({
+        error: 'User already confirmed'
+    })
+    user.confirmed = true
+    await user.save()
+    res.send('User confirmed! You may now log in.')
+})
+
 router.post('/', async (req, res) => {
-    const bcrypt = require('bcryptjs')
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(req.body.password, salt)
+    if (await User.findOne({ email: req.body.email })) return res.send({
+        error: 'Email already registered'
+    })
+    var crypto = require("crypto");
+    var confirmationHash = crypto.randomBytes(20).toString('hex');
     const newUser = User({
         email: req.body.email,
-        password: hashedPassword,
+        password: req.body.password,
         username: req.body.username,
         avatar: req.body.avatar,
         privatePem: req.body.privatePem,
         publicPem: req.body.publicPem,
-        confirmed: false
+        confirmed: false,
+        confHash: confirmationHash
     })
     await newUser.save()
-    await sendConfirmationEmail()
-    res.send('Confirm your email')
+    await sendConfirmationEmail(req.body.email, confirmationHash)
+    res.send({
+        message: 'Confirm your email'
+    })
+    // console.log("random", r);
     // res.send( {
     //     token: jwt.sign({
     //         id: newUser._id
@@ -31,7 +56,7 @@ router.post('/', async (req, res) => {
     // })
 })
 
-async function sendConfirmationEmail() {
+async function sendConfirmationEmail(email, hash) {
     let transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
@@ -44,12 +69,12 @@ async function sendConfirmationEmail() {
     
       let mailOptions = {
         from: '"Telega" <romcheg95@gmail.com>', // sender address
-        to: "romcheg95@gmail.com", // list of receivers
+        to: 'romcheg95@gmail.com', // list of receivers
         subject: "Please confirm your email", // Subject line
-        text: "Hello world?", // plain text body
+        text: `https://telega-rkyslyy.herokuapp.com/confirm?email=${email}&hash=${hash}`, // plain text body
+        //text: `localhost:3000/users/confirm?email=${email}&hash=${hash}`, // plain text body
       };
       await transporter.sendMail(mailOptions)
-      res.send('Email sent')
 }
 
 module.exports = router

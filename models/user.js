@@ -7,7 +7,8 @@ const userSchema = database.Schema({
     avatar: String,
     publicPem: String,
     privatePem: String,
-    confirmed: Boolean
+    confirmed: Boolean,
+    confHash: String
 })
 
 const User = database.model('User', userSchema)

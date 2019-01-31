@@ -4,7 +4,6 @@ const usersRouter = require('./routes/users')
 const authRouter = require('./routes/auth')
 const helmet = require('helmet')
 const compression = require('compression')
-const nodemailer = require('nodemailer')
 
 app.use(Express.json())
 app.use('/users', usersRouter)
