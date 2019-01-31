@@ -10,7 +10,6 @@ router.get('/', async (req, res) => {
 })
 
 router.get('/confirm', async (req, res) => {
-    // console.log(req.query)
     const email = req.query.email
     const hash = req.query.hash
     const user = await User.findOne({
@@ -28,7 +27,7 @@ router.get('/confirm', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-    if (await User.findOne({ email: req.body.email })) return res.send({
+    if (await User.findOne({ email: req.body.email })) return res.status(500).json({
         error: 'Email already registered'
     })
     var crypto = require("crypto");
@@ -48,12 +47,6 @@ router.post('/', async (req, res) => {
     res.send({
         message: 'Confirm your email'
     })
-    // console.log("random", r);
-    // res.send( {
-    //     token: jwt.sign({
-    //         id: newUser._id
-    //     }, 'secreto')
-    // })
 })
 
 async function sendConfirmationEmail(email, hash) {
@@ -71,7 +64,7 @@ async function sendConfirmationEmail(email, hash) {
         from: '"Telega" <romcheg95@gmail.com>', // sender address
         to: 'romcheg95@gmail.com', // list of receivers
         subject: "Please confirm your email", // Subject line
-        text: `https://telega-rkyslyy.herokuapp.com/confirm?email=${email}&hash=${hash}`, // plain text body
+        text: `https://telega-rkyslyy.herokuapp.com/users/confirm?email=${email}&hash=${hash}`, // plain text body
         //text: `localhost:3000/users/confirm?email=${email}&hash=${hash}`, // plain text body
       };
       await transporter.sendMail(mailOptions)

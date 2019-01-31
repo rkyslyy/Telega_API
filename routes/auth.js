@@ -11,8 +11,12 @@ router.post('/', async (req, res) => {
     if (!user) return res.status(404).send({
         error: 'User with such email not found'
     })
-    const passwordMatches = await bcrypt.compare(req.body.password, user.password)
-    if (!passwordMatches) return res.status(400).send('Password incorrect')
+    if (!user.confirmed) return res.status(400).send({
+        error: 'You need to confirm your email first'
+    })
+    if (user.password != req.body.password) return res.status(400).send({
+        error: 'Wrong email or password'
+    })
     res.send(jwt.sign({id: user._id, name: user.firstName}, 'secreto'))
 })
 
