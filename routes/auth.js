@@ -17,7 +17,10 @@ router.post('/', async (req, res) => {
     if (!bcrypt.compareSync(req.body.password, user.password)) return res.status(400).send({
         error: 'Wrong email or password'
     })
-    res.send(jwt.sign({id: user._id, name: user.firstName}, 'secreto'))
+    res.send({
+        token: jwt.sign({id: user._id, name: user.firstName}, 'secreto'),
+        username: user.username
+    })
 })
 
 module.exports = router
