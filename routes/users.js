@@ -1,13 +1,39 @@
 const Express = require('express')
 const router = Express.Router()
 const User = require('../models/user')
-const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 const bcrypt = require('bcryptjs')
+const auth = require('../middleware/auth')
+
+router.get('/me', auth, async (req, res) => {
+    const id = req.user.id
+    const user = await User.findById(id)
+    if (!user) return res.status(404).send({
+        error: 'User not found'
+    })
+    res.send({
+        user: user
+    })
+})
 
 router.get('/', async (req, res) => {
     const users = await User.find()
     res.send(users)
+})
+
+router.put('/', auth, async (req, res) => {
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).send({
+        error: 'Could not find user'
+    })
+    const username = req.body.username
+    const avatar = req.body.avatar
+    user.username = username
+    user.avatar = avatar
+    await user.save()
+    res.send({
+        success: true
+    })
 })
 
 router.get('/confirm', async (req, res) => {
@@ -56,19 +82,18 @@ async function sendConfirmationEmail(email, hash) {
     let transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
-        secure: true, // true for 465, false for other ports
+        secure: true,
         auth: {
-          user: 'romcheg95@gmail.com', // generated ethereal user
-          pass: 'Bloodypastor1986' // generated ethereal password
+          user: 'telega.app@gmail.com',
+          pass: 'rkyslyyTelega'
         }
       });
     
       let mailOptions = {
-        from: '"Telega" <romcheg95@gmail.com>', // sender address
-        to: 'romcheg95@gmail.com', // list of receivers
-        subject: "Please confirm your email", // Subject line
-        text: `https://telega-rkyslyy.herokuapp.com/users/confirm?email=${email}&hash=${hash}`, // plain text body
-        //text: `localhost:3000/users/confirm?email=${email}&hash=${hash}`, // plain text body
+        from: '"Telega" <telega.app@gmail.com>', 
+        to: 'telega.app95@gmail.com',
+        subject: "Please confirm your email",
+        text: `https://telega-rkyslyy.herokuapp.com/users/confirm?email=${email}&hash=${hash}`,
       };
       await transporter.sendMail(mailOptions)
 }

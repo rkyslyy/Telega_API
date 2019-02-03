@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
         error: 'Wrong email or password'
     })
     res.send({
-        token: jwt.sign({id: user._id, name: user.firstName}, 'secreto'),
+        token: jwt.sign({id: user._id}, 'secreto'),
         username: user.username
     })
 })
