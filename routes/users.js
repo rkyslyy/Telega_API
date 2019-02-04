@@ -69,7 +69,8 @@ router.post('/', async (req, res) => {
         privatePem: req.body.privatePem,
         publicPem: req.body.publicPem,
         confirmed: false,
-        confHash: confirmationHash
+        confHash: confirmationHash,
+        data: req.body.data
     })
     await newUser.save()
     await sendConfirmationEmail(req.body.email, confirmationHash)
