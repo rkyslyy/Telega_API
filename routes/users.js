@@ -12,8 +12,20 @@ router.get('/me', auth, async (req, res) => {
     if (!user) return res.status(404).send({
         error: 'User not found'
     })
+    var contacts = []
+    for (let index = 0; index < user.contacts.length; index++) {
+        const contact = await User.findById(user.contacts[index])
+        contacts.push(_.pick(contact, ['_id', 'email', 'username', 'avatar']))
+    }
     res.send({
-        user: user
+        user: {
+            email: user.email,
+            username: user.username,
+            avatar: user.avatar,
+            contacts: contacts,
+            publicPem: user.publicPem,
+            privatePem: user.privatePem,
+        }
     })
 })
 
@@ -22,14 +34,35 @@ router.get('/', async (req, res) => {
     res.send(users)
 })
 
-router.get('/:email', async (req, res) => {
-    const user = await User.findOne({
-        email: req.params.email
-    })
+router.get('/search/', async (req, res) => {
+    const email = req.query.email
+    const id = req.query.id
+    const user = email  ? await User.findOne({
+        email: email
+    })                  : await User.findById(id)
     if (!user) return res.status(404).send({
         error: 'No user with such email found'
     })
     res.send(_.pick(user, ['_id', 'email', 'username', 'avatar']))
+})
+
+router.put('/add_contact', auth, async (req, res) => {
+    const id = req.user.id
+    if (!id) return res.status(400).send({
+        error: 'No id provided in token'
+    })
+    const user = await User.findById(id)
+    console.log(user)
+    const userContacts = user.contacts
+    const newContact = req.body.contact
+    userContacts[userContacts.length] = newContact
+    user.contacts = userContacts
+    user.markModified('contacts')
+    await user.save()
+    res.send({
+        message: 'Contact added!',
+        user: _.pick(user, ['email', 'contacts'])
+    })
 })
 
 router.put('/', auth, async (req, res) => {
