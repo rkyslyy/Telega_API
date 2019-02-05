@@ -4,6 +4,7 @@ const User = require('../models/user')
 const nodemailer = require('nodemailer')
 const bcrypt = require('bcryptjs')
 const auth = require('../middleware/auth')
+const _ = require('lodash')
 
 router.get('/me', auth, async (req, res) => {
     const id = req.user.id
@@ -19,6 +20,16 @@ router.get('/me', auth, async (req, res) => {
 router.get('/', async (req, res) => {
     const users = await User.find()
     res.send(users)
+})
+
+router.get('/:email', async (req, res) => {
+    const user = await User.findOne({
+        email: req.params.email
+    })
+    if (!user) return res.status(404).send({
+        error: 'No user with such email found'
+    })
+    res.send(_.pick(user, ['_id', 'email', 'username', 'avatar']))
 })
 
 router.put('/', auth, async (req, res) => {

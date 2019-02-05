@@ -15,6 +15,7 @@
     "helmet": "^3.15.0",
     "jsencrypt": "^3.0.0-rc.1",
     "jsonwebtoken": "^8.4.0",
+    "lodash": "^4.17.11",
     "mongoose": "^5.4.6",
     "node-jsencrypt": "^1.0.0",
     "node-rsa": "^1.0.3",
