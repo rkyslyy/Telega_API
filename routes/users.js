@@ -52,15 +52,37 @@ router.put('/add_contact', auth, async (req, res) => {
         error: 'No id provided in token'
     })
     const user = await User.findById(id)
-    console.log(user)
     const userContacts = user.contacts
     const newContact = req.body.contact
-    userContacts[userContacts.length] = newContact
+    userContacts[userContacts.length] = {
+        id: newContact,
+        confirmed: false
+    }
     user.contacts = userContacts
     user.markModified('contacts')
     await user.save()
     res.send({
         message: 'Contact added!',
+        user: _.pick(user, ['email', 'contacts'])
+    })
+})
+
+router.put('/delete_contact', auth, async (req, res) => {
+    const id = req.user.id
+    if (!id) return res.status(400).send({
+        error: 'No id provided in token'
+    })
+    const user = await User.findById(id)
+    var newContacts = []
+    const targetContact = req.body.contact
+    user.contacts.forEach((id) => {
+        if (id != targetContact) newContacts.push(id)
+    })
+    user.contacts = newContacts
+    user.markModified('contacts')
+    await user.save()
+    res.send({
+        message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])
     })
 })
