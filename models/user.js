@@ -5,7 +5,7 @@ const userSchema = database.Schema({
     password: String,
     username: String,
     avatar: String,
-    contacts: [String],
+    contacts: [Object],
     publicPem: String,
     privatePem: String,
     confirmed: Boolean,
