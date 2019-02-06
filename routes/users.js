@@ -14,8 +14,11 @@ router.get('/me', auth, async (req, res) => {
     })
     var contacts = []
     for (let index = 0; index < user.contacts.length; index++) {
-        const contact = await User.findById(user.contacts[index])
-        contacts.push(_.pick(contact, ['_id', 'email', 'username', 'avatar']))
+        const contact = await User.findById(user.contacts[index].id)
+        var toPush = _.pick(contact, ['_id', 'email', 'username', 'avatar'])
+        toPush.confirmed = user.contacts[index].confirmed
+        toPush.requestIsMine = user.contacts[index].requestIsMine
+        contacts.push(toPush)
     }
     res.send({
         user: {
@@ -46,6 +49,36 @@ router.get('/search/', async (req, res) => {
     res.send(_.pick(user, ['_id', 'email', 'username', 'avatar']))
 })
 
+router.post('/accept_friend', auth, async (req, res) => {
+    const id = req.user.id
+    const friendID = req.body.friendID
+    const user = await User.findById(id)
+    var userContacts = user.contacts
+    for (let index = 0; index < userContacts.length; index++) {
+        const contact = userContacts[index];
+        if (contact.id == friendID)
+            userContacts[index].confirmed = true
+    }
+    user.contacts = userContacts
+    user.markModified('contacts')
+    await user.save()
+
+    const friend = await User.findById(friendID)
+    var friendContacts = friend.contacts
+    for (let index = 0; index < friendContacts.length; index++) {
+        const contact = friendContacts[index];
+        if (contact.id == id)
+            friendContacts[index].confirmed = true
+    }
+    friend.contacts = friendContacts
+    friend.markModified('contacts')
+    await friend.save()
+
+    res.send({
+        message: 'Friend request accepted!'
+    })
+})
+
 router.put('/add_contact', auth, async (req, res) => {
     const id = req.user.id
     if (!id) return res.status(400).send({
@@ -56,11 +89,22 @@ router.put('/add_contact', auth, async (req, res) => {
     const newContact = req.body.contact
     userContacts[userContacts.length] = {
         id: newContact,
-        confirmed: false
+        confirmed: false,
+        requestIsMine: true
     }
     user.contacts = userContacts
     user.markModified('contacts')
     await user.save()
+
+    const contragent = await User.findById(newContact)
+    const contrContacts = contragent.contacts
+    contrContacts[contrContacts.length] = {
+        id: id,
+        confirmed: false,
+        requestIsMine: false
+    }
+    contragent.markModified('contacts')
+    await contragent.save()
     res.send({
         message: 'Contact added!',
         user: _.pick(user, ['email', 'contacts'])
@@ -75,12 +119,22 @@ router.put('/delete_contact', auth, async (req, res) => {
     const user = await User.findById(id)
     var newContacts = []
     const targetContact = req.body.contact
-    user.contacts.forEach((id) => {
-        if (id != targetContact) newContacts.push(id)
+    user.contacts.forEach((contact) => {
+        if (contact.id != targetContact) newContacts.push(contact)
     })
     user.contacts = newContacts
     user.markModified('contacts')
     await user.save()
+
+    const contragent = await User.findById(targetContact)
+    newContacts = []
+    contragent.contacts.forEach((contact) => {
+        if (contact.id != id) newContacts.push(contact)
+    })
+    contragent.contacts = newContacts
+    contragent.markModified('contacts')
+    await contragent.save()
+
     res.send({
         message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])
