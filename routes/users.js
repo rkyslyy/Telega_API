@@ -61,8 +61,15 @@ router.post('/accept_friend', auth, async (req, res) => {
     var userContacts = user.contacts
     for (let index = 0; index < userContacts.length; index++) {
         const contact = userContacts[index];
-        if (contact.id == friendID)
+        if (contact.id == friendID) {
+            if (userContacts[index].confirmed) {
+                return res.send({
+                    message: 'Friend request accepted!'
+                })
+            }
             userContacts[index].confirmed = true
+        }
+            
     }
     user.contacts = userContacts
     user.markModified('contacts')
@@ -78,6 +85,24 @@ router.post('/accept_friend', auth, async (req, res) => {
     friend.contacts = friendContacts
     friend.markModified('contacts')
     await friend.save()
+
+    var clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == friendID
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts', id)
+    })
+
+    clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == id
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts', friendID)
+    })
 
     res.send({
         message: 'Friend request accepted!'
@@ -112,15 +137,23 @@ router.put('/add_contact', auth, async (req, res) => {
     await contragent.save()
 
     var clients = global.clients
-    console.log(clients.length)
     clients = clients.filter(client => {
         return client.userID == newContact
-    }) 
-    console.log(clients.length)
+    })
     clients.forEach(client => {
         console.log('EMMITTING')
-        client.client.emit('update contacts', newContact)
+        client.client.emit('update contacts')
     })
+
+    clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == id
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts')
+    })
+
     res.send({
         message: 'Contact added!',
         user: _.pick(user, ['email', 'contacts'])
@@ -150,6 +183,24 @@ router.put('/delete_contact', auth, async (req, res) => {
     contragent.contacts = newContacts
     contragent.markModified('contacts')
     await contragent.save()
+
+    var clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == targetContact
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts', id, 'delete')
+    })
+
+    clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == id
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts', targetContact, 'delete')
+    })
 
     res.send({
         message: 'Contact deleted!',

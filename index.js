@@ -34,13 +34,12 @@ io.on('connection', (socket) => {
             username: username,
             userID: id
         })
-        console.log('Clients connected:')
+        console.log(global.clients.length, 'Clients connected:')
         global.clients.forEach(client => {
             console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
         })
-        socket.emit('introduce', `Hello, ${username}, i am server`)
-    })
-
+        console.log('')
+    }) 
     socket.on('disconnect', () => {
         console.log('\nDISCONNECTION')
         global.clients = clients.filter(value => {
@@ -51,6 +50,7 @@ io.on('connection', (socket) => {
             console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
         })
     })
+    socket.emit('introduce') 
 })
 
 
