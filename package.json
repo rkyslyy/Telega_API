@@ -13,6 +13,7 @@
     "express": "^4.16.4",
     "express-mailer": "^0.3.1",
     "helmet": "^3.15.0",
+    "http": "0.0.0",
     "jsencrypt": "^3.0.0-rc.1",
     "jsonwebtoken": "^8.4.0",
     "lodash": "^4.17.11",
@@ -21,6 +22,7 @@
     "node-rsa": "^1.0.3",
     "nodemailer": "^5.1.1",
     "pem": "^1.13.2",
+    "socket.io": "^2.2.0",
     "ursa": "^0.9.4"
   },
   "devDependencies": {},

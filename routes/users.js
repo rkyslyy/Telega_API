@@ -22,6 +22,7 @@ router.get('/me', auth, async (req, res) => {
     }
     res.send({
         user: {
+            id: id,
             email: user.email,
             username: user.username,
             avatar: user.avatar,
@@ -33,8 +34,12 @@ router.get('/me', auth, async (req, res) => {
 })
 
 router.get('/', async (req, res) => {
-    const users = await User.find()
-    res.send(users)
+    // const users = await User.find()
+    var clients = global.clients
+    console.log(clients.length)
+    res.send({
+        users: 'users'
+    })
 })
 
 router.get('/search/', async (req, res) => {
@@ -105,6 +110,17 @@ router.put('/add_contact', auth, async (req, res) => {
     }
     contragent.markModified('contacts')
     await contragent.save()
+
+    var clients = global.clients
+    console.log(clients.length)
+    clients = clients.filter(client => {
+        return client.userID == newContact
+    }) 
+    console.log(clients.length)
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        client.client.emit('update contacts', newContact)
+    })
     res.send({
         message: 'Contact added!',
         user: _.pick(user, ['email', 'contacts'])
