@@ -15,11 +15,12 @@ router.get('/me', auth, async (req, res) => {
     var contacts = []
     for (let index = 0; index < user.contacts.length; index++) {
         const contact = await User.findById(user.contacts[index].id)
-        var toPush = _.pick(contact, ['_id', 'email', 'username', 'avatar'])
+        var toPush = _.pick(contact, ['_id', 'email', 'username', 'avatar', 'publicPem'])
         toPush.confirmed = user.contacts[index].confirmed
         toPush.requestIsMine = user.contacts[index].requestIsMine
         contacts.push(toPush)
     }
+    console.log(user.messages.length)
     res.send({
         user: {
             id: id,
@@ -27,6 +28,7 @@ router.get('/me', auth, async (req, res) => {
             username: user.username,
             avatar: user.avatar,
             contacts: contacts,
+            messages: user.messages,
             publicPem: user.publicPem,
             privatePem: user.privatePem,
         }
@@ -51,7 +53,7 @@ router.get('/search/', async (req, res) => {
     if (!user) return res.status(404).send({
         error: 'No user with such email found'
     })
-    res.send(_.pick(user, ['_id', 'email', 'username', 'avatar']))
+    res.send(_.pick(user, ['_id', 'email', 'username', 'avatar', 'publicPem']))
 })
 
 router.post('/accept_friend', auth, async (req, res) => {
@@ -279,7 +281,7 @@ async function sendConfirmationEmail(email, hash) {
     
       let mailOptions = {
         from: '"Telega" <telega.app@gmail.com>', 
-        to: 'telega.app95@gmail.com',
+        to: email,
         subject: "Please confirm your email",
         text: `https://telega-rkyslyy.herokuapp.com/users/confirm?email=${email}&hash=${hash}`,
       };

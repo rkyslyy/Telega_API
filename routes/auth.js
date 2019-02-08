@@ -19,7 +19,8 @@ router.post('/', async (req, res) => {
     })
     res.send({
         token: jwt.sign({id: user._id}, 'secreto'),
-        username: user.username
+        username: user.username,
+        privatePem: user.privatePem
     })
 })
 
