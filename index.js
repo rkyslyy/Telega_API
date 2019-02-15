@@ -30,37 +30,64 @@ let io = socket(app.server);
 global.clients = []
 
 io.on('connection', async (socket) => {
-    console.log('\nCONNECTION')
     socket.on('introduce', async function(username, id) {
         global.clients.push({
             client: socket,
             username: username,
             userID: id
         })
-        // const userContactsClients = await getUserContactsClients(id)
-        // console.log(userContactsClients)
-        // userContactsClients.forEach(client => {
-        //     client.emit('online', userID)
-        //     console.log('EMITTING ONLINE')
+        console.log(`\n${username} CONNECTED`)
+        const userContactsClients = await getUserContactsClients(id)
+        console.log('friends:', userContactsClients.length)
+        for (let index = 0; index < userContactsClients.length; index++) {
+            const element = userContactsClients[index];
+            element.client.emit('online', id)
+            console.log(`EMITTING TO ${element.username} THAT I AM ONLINE`)
+            socket.emit('online', element.userID)
+        }
+        // console.log(global.clients.length, 'Clients connected:')
+        // global.clients.forEach(client => {
+        //     console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
         // })
-        console.log(global.clients.length, 'Clients connected:')
-        global.clients.forEach(client => {
-            console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
-        })
         console.log('')
-    }) 
-    socket.on('disconnect', () => {
-        console.log('\nDISCONNECTION')
+    })
+    socket.on('disconnect', async () => {
+        var myID
+        var username
         global.clients = clients.filter(value => {
+            if (value.client.id == socket.id) {
+                myID = value.userID
+                username = value.username
+            }
             return value.client.id != socket.id
         })
-        console.log('Clients connected:')
-        global.clients.forEach(client => {
-            console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
-        })
+        console.log(`\n${username} DISCONNECTED`)
+        if (iAmUnique(myID)) {
+            const userContactsClients = await getUserContactsClients(myID)
+            console.log('friends:', userContactsClients.length)
+            for (let index = 0; index < userContactsClients.length; index++) {
+                const element = userContactsClients[index];
+                element.client.emit('offline', myID)
+                console.log(`EMITTING TO ${element.username} THAT I AM OFFLINE`)
+            }
+        }
+        // console.log('Clients connected:')
+        // global.clients.forEach(client => {
+        //     console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
+        // })
     })
     socket.emit('introduce') 
 })
+
+function iAmUnique(myID) {
+    const clients = global.clients
+    for (let index = 0; index < clients.length; index++) {
+        const element = clients[index];
+        if (element.userID == myID)
+            return false
+    }
+    return true
+}
 
 async function getUserContactsClients(id) {
     const user = await User.findById(id)
@@ -73,8 +100,6 @@ async function getUserContactsClients(id) {
     var contactsClients = []
     clients.forEach(client => {
         ids.forEach(id => {
-            console.log('id:', id)
-            console.log('client id:', client.userID)
             if (id == client.userID)
                 contactsClients.push(client)
         })
