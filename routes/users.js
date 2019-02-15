@@ -20,7 +20,6 @@ router.get('/me', auth, async (req, res) => {
         toPush.requestIsMine = user.contacts[index].requestIsMine
         contacts.push(toPush)
     }
-    console.log(user.messages.length)
     res.send({
         user: {
             id: id,
@@ -38,7 +37,6 @@ router.get('/me', auth, async (req, res) => {
 router.get('/', async (req, res) => {
     // const users = await User.find()
     var clients = global.clients
-    console.log(clients.length)
     res.send({
         users: 'users'
     })
@@ -223,6 +221,25 @@ router.put('/', auth, async (req, res) => {
     res.send({
         success: true
     })
+})
+
+router.put('/change_password/', auth, async (req, res) => {
+    const user = await User.findById(req.user.id)
+    console.log('USER FOUND')
+    if (!user) return res.status(404).send({
+        error: 'Could not find user'
+    })
+    const password = req.body.password
+    const pem = req.body.pem
+    const salt = bcrypt.genSaltSync(10)
+    const hashedPass = bcrypt.hashSync(password, salt)
+    user.password = hashedPass
+    user.privatePem = pem
+    await user.save()
+    res.send({
+        success: true
+    })
+    console.log('SUCCESS')
 })
 
 router.get('/confirm', async (req, res) => {

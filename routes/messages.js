@@ -3,6 +3,17 @@ const router = Express.Router()
 const User = require('../models/user')
 const auth = require('../middleware/auth')
 
+router.get('/erase', async (req, res) => {
+    const users = await User.find()
+    for (let index = 0; index < users.length; index++) {
+        const user = users[index]
+        user.messages = []
+        user.markModified('messages')
+        await user.save()
+    }
+    res.send('Messages erased!')
+})
+
 router.post('/', auth, async (req, res) => {
     const myID = req.user.id
     const messageForMe = req.body.messageForMe
@@ -10,13 +21,18 @@ router.post('/', auth, async (req, res) => {
     const messageForThem = req.body.messageForThem
     const me = await User.findById(myID)
     const them = await User.findById(theirID)
+    var datetime = new Date();
+    // datetime.setDate(datetime.getDate() - 1)
+    console.log(datetime.toISOString())
     const messageForMeObj = {
         message: messageForMe,
+        time: datetime.toISOString(),
         mine: true,
         storeID: theirID
     }
     const messageForThemObj = {
         message: messageForThem,
+        time: datetime.toISOString(),
         mine: false,
         storeID: myID
     }
@@ -37,7 +53,8 @@ router.post('/', auth, async (req, res) => {
     })
 
     res.send({
-        message: 'Message sent!'
+        message: 'Message sent!',
+        time: new Date().toISOString()
     })
 })
 

@@ -8,6 +8,7 @@ const messagesRouter = require('./routes/messages')
 const helmet = require('helmet')
 const compression = require('compression')
 var bodyParser = require('body-parser');
+const User = require('./models/user')
 
 app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -28,14 +29,20 @@ let io = socket(app.server);
 
 global.clients = []
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
     console.log('\nCONNECTION')
-    socket.on('introduce', function(username, id) {
+    socket.on('introduce', async function(username, id) {
         global.clients.push({
             client: socket,
             username: username,
             userID: id
         })
+        // const userContactsClients = await getUserContactsClients(id)
+        // console.log(userContactsClients)
+        // userContactsClients.forEach(client => {
+        //     client.emit('online', userID)
+        //     console.log('EMITTING ONLINE')
+        // })
         console.log(global.clients.length, 'Clients connected:')
         global.clients.forEach(client => {
             console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
@@ -55,6 +62,25 @@ io.on('connection', (socket) => {
     socket.emit('introduce') 
 })
 
+async function getUserContactsClients(id) {
+    const user = await User.findById(id)
+    const userContacts = user.contacts
+    var ids = []
+    userContacts.forEach(contact => {
+        ids.push(contact.id)
+    })
+    const clients = global.clients
+    var contactsClients = []
+    clients.forEach(client => {
+        ids.forEach(id => {
+            console.log('id:', id)
+            console.log('client id:', client.userID)
+            if (id == client.userID)
+                contactsClients.push(client)
+        })
+    })
+    return contactsClients
+}
 
 
 app.server.listen(port)
