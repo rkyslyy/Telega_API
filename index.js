@@ -76,6 +76,15 @@ io.on('connection', async (socket) => {
         //     console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
         // })
     })
+    socket.on('messages_read', async (contactID, myID) => {
+        setMessagesReadFrom(contactID, myID)
+        const myClones = global.clients.filter(client => {
+            return client.userID == myID
+        })
+        myClones.forEach(client => {
+            client.client.emit('messages_read', contactID)
+        })
+    })
     socket.emit('introduce') 
 })
 
@@ -87,6 +96,21 @@ function iAmUnique(myID) {
             return false
     }
     return true
+}
+
+async function setMessagesReadFrom(contactID, myID) {
+    console.log(myID)
+    const user = await User.findById(myID)
+    var contacts = user.contacts
+    for (let i = 0; i < contacts.length; i++) {
+        const contact = contacts[i]
+        if (contact.id == contactID) {
+            contacts[i].unread = false
+        }
+    }
+    user.contacts = contacts
+    user.markModified('contacts')
+    await user.save()
 }
 
 async function getUserContactsClients(id) {

@@ -13,11 +13,20 @@ router.get('/me', auth, async (req, res) => {
         error: 'User not found'
     })
     var contacts = []
+    const clients = global.clients
     for (let index = 0; index < user.contacts.length; index++) {
         const contact = await User.findById(user.contacts[index].id)
         var toPush = _.pick(contact, ['_id', 'email', 'username', 'avatar', 'publicPem'])
+        var online = false
+        for (let i = 0; i < clients.length; i++) {
+            const client = clients[i];
+            if (client.userID == contact._id)
+                online = true
+        }
+        toPush.online = online
         toPush.confirmed = user.contacts[index].confirmed
         toPush.requestIsMine = user.contacts[index].requestIsMine
+        toPush.unread = user.contacts[index].unread
         contacts.push(toPush)
     }
     res.send({
@@ -69,7 +78,6 @@ router.post('/accept_friend', auth, async (req, res) => {
             }
             userContacts[index].confirmed = true
         }
-            
     }
     user.contacts = userContacts
     user.markModified('contacts')
@@ -93,6 +101,7 @@ router.post('/accept_friend', auth, async (req, res) => {
     clients.forEach(client => {
         console.log('EMMITTING')
         client.client.emit('update contacts', id)
+        // client.client.emit('online', id)
     })
 
     clients = global.clients
@@ -102,6 +111,7 @@ router.post('/accept_friend', auth, async (req, res) => {
     clients.forEach(client => {
         console.log('EMMITTING')
         client.client.emit('update contacts', friendID)
+        // client.client.emit('online', friendID)
     })
 
     res.send({
@@ -120,7 +130,8 @@ router.put('/add_contact', auth, async (req, res) => {
     userContacts[userContacts.length] = {
         id: newContact,
         confirmed: false,
-        requestIsMine: true
+        requestIsMine: true,
+        unread: false
     }
     user.contacts = userContacts
     user.markModified('contacts')
@@ -131,7 +142,8 @@ router.put('/add_contact', auth, async (req, res) => {
     contrContacts[contrContacts.length] = {
         id: id,
         confirmed: false,
-        requestIsMine: false
+        requestIsMine: false,
+        unread: false
     }
     contragent.markModified('contacts')
     await contragent.save()

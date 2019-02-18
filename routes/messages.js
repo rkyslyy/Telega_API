@@ -15,6 +15,7 @@ router.get('/erase', async (req, res) => {
 })
 
 router.post('/', auth, async (req, res) => {
+    const socketID = req.body.socketID
     const myID = req.user.id
     const messageForMe = req.body.messageForMe
     const theirID = req.body.theirID
@@ -23,7 +24,7 @@ router.post('/', auth, async (req, res) => {
     const them = await User.findById(theirID)
     var datetime = new Date();
     // datetime.setDate(datetime.getDate() - 1)
-    console.log(datetime.toISOString())
+    // console.log(datetime.toISOString())
     const messageForMeObj = {
         message: messageForMe,
         time: datetime.toISOString(),
@@ -40,16 +41,35 @@ router.post('/', auth, async (req, res) => {
     them.messages.push(messageForThemObj)
     me.markModified('messages')
     them.markModified('messages')
+    var contacts = them.contacts
+    // console.log(contacts)
+    for (let i = 0; i < contacts.length; i++) {
+        const contact = contacts[i]
+        if (contact.id == myID)
+            contacts[i].unread = true
+    }
+    them.contacts = contacts
+    them.markModified('contacts')
     await me.save()
     await them.save()
 
-    var clients = global.clients
-    clients = clients.filter(client => {
+    var clients = global.clients.filter(client => {
         return client.userID == theirID
     })
     clients.forEach(client => {
         console.log('EMMITTING')
-        client.client.emit('update messages', myID)
+        client.client.emit('update messages', messageForThemObj)
+    })
+
+    clients = global.clients.filter(client => {
+        return client.userID == myID
+    })
+    console.log(clients)
+    clients.forEach(client => {
+        if (client.client.id != socketID) {
+            console.log('EMMITTING TO MYSELF')
+            client.client.emit('update messages', messageForMeObj)
+        }
     })
 
     res.send({
