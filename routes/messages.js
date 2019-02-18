@@ -17,65 +17,58 @@ router.get('/erase', async (req, res) => {
 router.post('/', auth, async (req, res) => {
     const socketID = req.body.socketID
     const myID = req.user.id
-    const messageForMe = req.body.messageForMe
     const theirID = req.body.theirID
-    const messageForThem = req.body.messageForThem
     const me = await User.findById(myID)
     const them = await User.findById(theirID)
-    var datetime = new Date();
-    // datetime.setDate(datetime.getDate() - 1)
-    // console.log(datetime.toISOString())
+    var datetime = new Date()
     const messageForMeObj = {
-        message: messageForMe,
+        message: req.body.messageForMe,
         time: datetime.toISOString(),
         mine: true,
         storeID: theirID
     }
     const messageForThemObj = {
-        message: messageForThem,
+        message: req.body.messageForThem,
         time: datetime.toISOString(),
         mine: false,
         storeID: myID
     }
-    me.messages.push(messageForMeObj)
-    them.messages.push(messageForThemObj)
-    me.markModified('messages')
-    them.markModified('messages')
-    var contacts = them.contacts
-    // console.log(contacts)
-    for (let i = 0; i < contacts.length; i++) {
-        const contact = contacts[i]
-        if (contact.id == myID)
-            contacts[i].unread = true
-    }
-    them.contacts = contacts
-    them.markModified('contacts')
+    updateUsers(me, them, messageForMeObj, messageForThemObj)
     await me.save()
     await them.save()
-
-    var clients = global.clients.filter(client => {
-        return client.userID == theirID
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update messages', messageForThemObj)
-    })
-
-    clients = global.clients.filter(client => {
-        return client.userID == myID
-    })
-    console.log(clients)
-    clients.forEach(client => {
-        if (client.client.id != socketID) {
-            console.log('EMMITTING TO MYSELF')
-            client.client.emit('update messages', messageForMeObj)
-        }
-    })
-
+    emitUpdateMessages(theirID, messageForThemObj)
+    emitUpdateMessages(myID, messageForMeObj, socketID)
     res.send({
         message: 'Message sent!',
         time: new Date().toISOString()
     })
 })
+
+function updateUsers(sender, addresse, mesForSender, mesForAddr) {
+    sender.messages.push(mesForSender)
+    addresse.messages.push(mesForAddr)
+    sender.markModified('messages')
+    addresse.markModified('messages')
+    var contacts = addresse.contacts
+    for (let i = 0; i < contacts.length; i++) {
+        const contact = contacts[i]
+        if (contact.id == sender._id)
+            contacts[i].unread = true
+    }
+    addresse.contacts = contacts
+    addresse.markModified('contacts')
+}
+
+function emitUpdateMessages(id, message, socketID) {
+    var clients = global.clients.filter(client => {
+        return client.userID == id
+    })
+    clients.forEach(client => {
+        console.log('EMMITTING')
+        if ((socketID && socketID != client.client.id) || !socketID) {
+            client.client.emit('update messages', message)
+        }
+    })
+}
 
 module.exports = router

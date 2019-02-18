@@ -67,53 +67,9 @@ router.post('/accept_friend', auth, async (req, res) => {
     const id = req.user.id
     const friendID = req.body.friendID
     const user = await User.findById(id)
-    var userContacts = user.contacts
-    for (let index = 0; index < userContacts.length; index++) {
-        const contact = userContacts[index];
-        if (contact.id == friendID) {
-            if (userContacts[index].confirmed) {
-                return res.send({
-                    message: 'Friend request accepted!'
-                })
-            }
-            userContacts[index].confirmed = true
-        }
-    }
-    user.contacts = userContacts
-    user.markModified('contacts')
-    await user.save()
-
     const friend = await User.findById(friendID)
-    var friendContacts = friend.contacts
-    for (let index = 0; index < friendContacts.length; index++) {
-        const contact = friendContacts[index];
-        if (contact.id == id)
-            friendContacts[index].confirmed = true
-    }
-    friend.contacts = friendContacts
-    friend.markModified('contacts')
-    await friend.save()
-
-    var clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == friendID
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts', id)
-        // client.client.emit('online', id)
-    })
-
-    clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == id
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts', friendID)
-        // client.client.emit('online', friendID)
-    })
-
+    const acceptFriendOf = require('./extensions/acceptFriend')
+    await acceptFriendOf(user, friend)
     res.send({
         message: 'Friend request accepted!'
     })
@@ -121,51 +77,11 @@ router.post('/accept_friend', auth, async (req, res) => {
 
 router.put('/add_contact', auth, async (req, res) => {
     const id = req.user.id
-    if (!id) return res.status(400).send({
-        error: 'No id provided in token'
-    })
+    const newContactID = req.body.contact
     const user = await User.findById(id)
-    const userContacts = user.contacts
-    const newContact = req.body.contact
-    userContacts[userContacts.length] = {
-        id: newContact,
-        confirmed: false,
-        requestIsMine: true,
-        unread: false
-    }
-    user.contacts = userContacts
-    user.markModified('contacts')
-    await user.save()
-
-    const contragent = await User.findById(newContact)
-    const contrContacts = contragent.contacts
-    contrContacts[contrContacts.length] = {
-        id: id,
-        confirmed: false,
-        requestIsMine: false,
-        unread: false
-    }
-    contragent.markModified('contacts')
-    await contragent.save()
-
-    var clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == newContact
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts')
-    })
-
-    clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == id
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts')
-    })
-
+    const contact = await User.findById(newContactID)
+    const addContactTo = require('./extensions/addContact')
+    await addContactTo(user, contact)
     res.send({
         message: 'Contact added!',
         user: _.pick(user, ['email', 'contacts'])
@@ -174,50 +90,25 @@ router.put('/add_contact', auth, async (req, res) => {
 
 router.put('/delete_contact', auth, async (req, res) => {
     const id = req.user.id
-    if (!id) return res.status(400).send({
-        error: 'No id provided in token'
-    })
+    const contactID = req.body.contact
     const user = await User.findById(id)
-    var newContacts = []
-    const targetContact = req.body.contact
-    user.contacts.forEach((contact) => {
-        if (contact.id != targetContact) newContacts.push(contact)
-    })
-    user.contacts = newContacts
-    user.markModified('contacts')
-    await user.save()
-
-    const contragent = await User.findById(targetContact)
-    newContacts = []
-    contragent.contacts.forEach((contact) => {
-        if (contact.id != id) newContacts.push(contact)
-    })
-    contragent.contacts = newContacts
-    contragent.markModified('contacts')
-    await contragent.save()
-
-    var clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == targetContact
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts', id, 'delete')
-    })
-
-    clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == id
-    })
-    clients.forEach(client => {
-        console.log('EMMITTING')
-        client.client.emit('update contacts', targetContact, 'delete')
-    })
-
+    const contact = await User.findById(contactID)
+    const deleteContactFrom = require('./extensions/deleteContact')
+    deleteContactFrom(user, contact)
     res.send({
         message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])
     })
+})
+
+router.get('/delete_all_contacts', async (req, res) => {
+    const users = await User.find()
+    for (let i = 0; i < users.length; i++) {
+        const user = users[i]
+        user.contacts = []
+        await user.save()
+    }
+    res.send('All contacts erased!')
 })
 
 router.put('/', auth, async (req, res) => {
@@ -251,7 +142,6 @@ router.put('/change_password/', auth, async (req, res) => {
     res.send({
         success: true
     })
-    console.log('SUCCESS')
 })
 
 router.get('/confirm', async (req, res) => {
@@ -307,7 +197,6 @@ async function sendConfirmationEmail(email, hash) {
           pass: 'rkyslyyTelega'
         }
       });
-    
       let mailOptions = {
         from: '"Telega" <telega.app@gmail.com>', 
         to: email,
