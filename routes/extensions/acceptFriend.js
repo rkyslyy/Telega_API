@@ -1,12 +1,12 @@
 module.exports =
 async function acceptFriendOf(user, friend) {
-    await confirmByUser(user, friend)
-    await confirmByFriend(user, friend)
+    await confirmBy(user, friend)
+    await confirmBy(friend, user)
     emitUpdateContacts(user._id, friend._id)
     emitUpdateContacts(friend._id, user._id)
 }
 
-async function confirmByUser(user, friend) {
+async function confirmBy(user, friend) {
     for (let index = 0; index < user.contacts.length; index++) {
         const contact = user.contacts[index]
         if (contact.id == friend._id) {
@@ -15,16 +15,6 @@ async function confirmByUser(user, friend) {
     }
     user.markModified('contacts')
     await user.save()
-}
-
-async function confirmByFriend(user, friend) {
-    for (let index = 0; index < friend.contacts.length; index++) {
-        const contact = friend.contacts[index];
-        if (contact.id == user._id)
-            friend.contacts[index].confirmed = true
-    }
-    friend.markModified('contacts')
-    await friend.save()
 }
 
 function emitUpdateContacts(userID, friendID) {
