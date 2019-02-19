@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer')
 const bcrypt = require('bcryptjs')
 const auth = require('../middleware/auth')
 const _ = require('lodash')
+const Joi = require('joi')
 
 router.get('/me', auth, async (req, res) => {
     const id = req.user.id
@@ -30,16 +31,7 @@ router.get('/me', auth, async (req, res) => {
         contacts.push(toPush)
     }
     res.send({
-        user: {
-            id: id,
-            email: user.email,
-            username: user.username,
-            avatar: user.avatar,
-            contacts: contacts,
-            messages: user.messages,
-            publicPem: user.publicPem,
-            privatePem: user.privatePem,
-        }
+        user: _.assign(user, {contacts: contacts})
     })
 })
 
@@ -68,6 +60,7 @@ router.post('/accept_friend', auth, async (req, res) => {
     const friendID = req.body.friendID
     const user = await User.findById(id)
     const friend = await User.findById(friendID)
+    if (!user || !friend) return res.status(400).send({error: 'Bad request'})
     const acceptFriendOf = require('./extensions/acceptFriend')
     await acceptFriendOf(user, friend)
     res.send({
@@ -80,6 +73,7 @@ router.put('/add_contact', auth, async (req, res) => {
     const newContactID = req.body.contact
     const user = await User.findById(id)
     const contact = await User.findById(newContactID)
+    if (!user || !contact) return res.status(400).send({error: 'Bad request'})
     const addContactTo = require('./extensions/addContact')
     await addContactTo(user, contact)
     res.send({
@@ -93,8 +87,9 @@ router.put('/delete_contact', auth, async (req, res) => {
     const contactID = req.body.contact
     const user = await User.findById(id)
     const contact = await User.findById(contactID)
+    if (!user || !contact) return res.status(400).send({error: 'Bad request'})
     const deleteContactFrom = require('./extensions/deleteContact')
-    deleteContactFrom(user, contact)
+    await deleteContactFrom(user, contact)
     res.send({
         message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])
@@ -103,6 +98,7 @@ router.put('/delete_contact', auth, async (req, res) => {
 
 router.get('/delete_all_contacts', async (req, res) => {
     const users = await User.find()
+    if (!users) return res.status(500).send({error: 'Internal server error'})
     for (let i = 0; i < users.length; i++) {
         const user = users[i]
         user.contacts = []
@@ -128,7 +124,6 @@ router.put('/', auth, async (req, res) => {
 
 router.put('/change_password/', auth, async (req, res) => {
     const user = await User.findById(req.user.id)
-    console.log('USER FOUND')
     if (!user) return res.status(404).send({
         error: 'Could not find user'
     })
@@ -162,11 +157,14 @@ router.get('/confirm', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
+    if (!requestBodyIsValid(req.body)) return res.status(500).json({
+        error: 'Request invalid'
+    })
     if (await User.findOne({ email: req.body.email })) return res.status(500).json({
         error: 'Email already registered'
     })
-    const crypto = require("crypto");
-    const confirmationHash = crypto.randomBytes(20).toString('hex');
+    const crypto = require('crypto')
+    const confirmationHash = crypto.randomBytes(20).toString('hex')
     const salt = bcrypt.genSaltSync(10)
     const hashedPass = bcrypt.hashSync(req.body.password, salt)
     const newUser = User({
@@ -177,8 +175,7 @@ router.post('/', async (req, res) => {
         privatePem: req.body.privatePem,
         publicPem: req.body.publicPem,
         confirmed: false,
-        confHash: confirmationHash,
-        data: req.body.data
+        confHash: confirmationHash
     })
     await newUser.save()
     await sendConfirmationEmail(req.body.email, confirmationHash)
@@ -186,6 +183,19 @@ router.post('/', async (req, res) => {
         message: 'Confirm your email'
     })
 })
+
+function requestBodyIsValid(requestBody) {
+    const validSchema = {
+        email: Joi.string().email().required(),
+        password: Joi.string().min(8).required(),
+        username: Joi.string().min(1).required(),
+        avatar: Joi.string().required(),
+        privatePem: Joi.string().required(),
+        publicPem: Joi.string().required()
+    }
+    if (Joi.validate(requestBody, validSchema).error) return false
+    return true
+}
 
 async function sendConfirmationEmail(email, hash) {
     let transporter = nodemailer.createTransport({

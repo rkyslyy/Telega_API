@@ -10,8 +10,7 @@ const userSchema = database.Schema({
     publicPem: String,
     privatePem: String,
     confirmed: Boolean,
-    confHash: String,
-    data: Buffer
+    confHash: String
 })
 
 const User = database.model('User', userSchema)

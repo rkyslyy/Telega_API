@@ -14,6 +14,7 @@
     "express-mailer": "^0.3.1",
     "helmet": "^3.15.0",
     "http": "0.0.0",
+    "joi": "^14.3.1",
     "jsencrypt": "^3.0.0-rc.1",
     "jsonwebtoken": "^8.4.0",
     "lodash": "^4.17.11",

@@ -64,7 +64,6 @@ function emitUpdateMessages(id, message, socketID) {
         return client.userID == id
     })
     clients.forEach(client => {
-        console.log('EMMITTING')
         if ((socketID && socketID != client.client.id) || !socketID) {
             client.client.emit('update messages', message)
         }
