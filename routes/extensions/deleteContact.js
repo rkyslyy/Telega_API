@@ -1,9 +1,9 @@
 module.exports =
-async function deleteContacts(user, contact) {
+async function deleteContacts(user, contact, socketID) {
     await deleteUsersFrom(user, contact._id)
     await deleteUsersFrom(contact, user._id)
-    emitUpdateContacts(user._id, contact._id)
-    emitUpdateContacts(contact._id, user._id)
+    emitDeleteContacts(user._id, contact._id, socketID)
+    emitDeleteContacts(contact._id, user._id)
 }
 
 async function deleteUsersFrom(user, contactID) {
@@ -16,12 +16,16 @@ async function deleteUsersFrom(user, contactID) {
     await user.save()
 }
 
-function emitUpdateContacts(firstID, secondID) {
+function emitDeleteContacts(firstID, secondID, socketID) {
     var clients = global.clients
     clients = clients.filter(client => {
-        return client.userID == secondID
+        return client.userID == firstID
     })
     clients.forEach(client => {
-        client.client.emit('update contacts', firstID, 'delete')
+        if ((socketID && socketID != client.client.id) || !socketID) {
+            // console.log(`EMITTING DELETE TO ${client.username}`)
+            // console.log(socketID)
+            client.client.emit('delete_contact', secondID)
+        }
     })
 }

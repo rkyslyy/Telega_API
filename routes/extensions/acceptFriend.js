@@ -1,9 +1,9 @@
 module.exports =
-async function acceptFriendOf(user, friend) {
+async function acceptFriendOf(user, friend, socketID) {
     await confirmBy(user, friend)
     await confirmBy(friend, user)
-    emitUpdateContacts(user._id, friend._id)
-    emitUpdateContacts(friend._id, user._id)
+    emitAcceptFriend(user._id, friend._id, socketID)
+    emitAcceptFriend(friend._id, user._id)
 }
 
 async function confirmBy(user, friend) {
@@ -15,6 +15,19 @@ async function confirmBy(user, friend) {
     }
     user.markModified('contacts')
     await user.save()
+}
+
+function emitAcceptFriend(userID, friendID, socketID) {
+    var clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == userID
+    })
+    clients.forEach(client => {
+        if ((socketID && socketID != client.client.id) || !socketID) {
+            // console.log(`EMITTING ACCEPT TO ${client.username}`)
+            client.client.emit('accept_friend', friendID)
+        }
+    })
 }
 
 function emitUpdateContacts(userID, friendID) {

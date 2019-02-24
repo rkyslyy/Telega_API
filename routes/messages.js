@@ -15,6 +15,7 @@ router.get('/erase', async (req, res) => {
 })
 
 router.post('/', auth, async (req, res) => {
+    console.log(req.body)
     const socketID = req.body.socketID
     const myID = req.user.id
     const theirID = req.body.theirID
@@ -65,6 +66,10 @@ function emitUpdateMessages(id, message, socketID) {
     })
     clients.forEach(client => {
         if ((socketID && socketID != client.client.id) || !socketID) {
+            // console.log('emitting')
+            // console.log('ID SENT TO SERVER:', socketID)
+            // console.log('CLIENT ID:', client.client.id)
+            // console.log('')
             client.client.emit('update messages', message)
         }
     })

@@ -60,9 +60,10 @@ router.post('/accept_friend', auth, async (req, res) => {
     const friendID = req.body.friendID
     const user = await User.findById(id)
     const friend = await User.findById(friendID)
+    const socketID = req.body.socketID
     if (!user || !friend) return res.status(400).send({error: 'Bad request'})
     const acceptFriendOf = require('./extensions/acceptFriend')
-    await acceptFriendOf(user, friend)
+    await acceptFriendOf(user, friend, socketID)
     res.send({
         message: 'Friend request accepted!'
     })
@@ -73,9 +74,10 @@ router.put('/add_contact', auth, async (req, res) => {
     const newContactID = req.body.contact
     const user = await User.findById(id)
     const contact = await User.findById(newContactID)
+    const socketID = req.body.socketID
     if (!user || !contact) return res.status(400).send({error: 'Bad request'})
     const addContactTo = require('./extensions/addContact')
-    await addContactTo(user, contact)
+    await addContactTo(user, contact, socketID)
     res.send({
         message: 'Contact added!',
         user: _.pick(user, ['email', 'contacts'])
@@ -87,9 +89,10 @@ router.put('/delete_contact', auth, async (req, res) => {
     const contactID = req.body.contact
     const user = await User.findById(id)
     const contact = await User.findById(contactID)
+    const socketID = req.body.socketID
     if (!user || !contact) return res.status(400).send({error: 'Bad request'})
     const deleteContactFrom = require('./extensions/deleteContact')
-    await deleteContactFrom(user, contact)
+    await deleteContactFrom(user, contact, socketID)
     res.send({
         message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])

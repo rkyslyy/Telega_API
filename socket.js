@@ -14,17 +14,17 @@ function setupSocket(app) {
             })
             console.log(`\n${username} CONNECTED`)
             const userContactsClients = await getUserContactsClients(id)
-            console.log('friends:', userContactsClients.length)
+            // console.log('friends:', userContactsClients.length)
             for (let index = 0; index < userContactsClients.length; index++) {
                 const element = userContactsClients[index];
-                element.client.emit('online', id)
-                console.log(`EMITTING TO ${element.username} THAT I AM ONLINE`)
+                element.client.emit('online_changed', id, true)
+                // console.log(`EMITTING TO ${element.username} THAT I AM ONLINE`)
                 socket.emit('online', element.userID)
             }
-            // console.log(global.clients.length, 'Clients connected:')
-            // global.clients.forEach(client => {
-            //     console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
-            // })
+            console.log(global.clients.length, 'Clients connected:')
+            global.clients.forEach(client => {
+                console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
+            })
             console.log('')
         })
         socket.on('disconnect', async () => {
@@ -40,17 +40,17 @@ function setupSocket(app) {
             console.log(`\n${username} DISCONNECTED`)
             if (iAmUnique(myID)) {
                 const userContactsClients = await getUserContactsClients(myID)
-                console.log('friends:', userContactsClients.length)
+                // console.log('friends:', userContactsClients.length)
                 for (let index = 0; index < userContactsClients.length; index++) {
                     const element = userContactsClients[index];
-                    element.client.emit('offline', myID)
-                    console.log(`EMITTING TO ${element.username} THAT I AM OFFLINE`)
+                    element.client.emit('online_changed', myID, false)
+                    // console.log(`EMITTING TO ${element.username} THAT I AM OFFLINE`)
                 }
             }
-            // console.log('Clients connected:')
-            // global.clients.forEach(client => {
-            //     console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
-            // })
+            console.log('Clients connected:')
+            global.clients.forEach(client => {
+                console.log(client.username + ' ' + client.userID + ' with socket ' + client.client.id)
+            })
         })
         socket.on('messages_read', async (contactID, myID) => {
             setMessagesReadFrom(contactID, myID)

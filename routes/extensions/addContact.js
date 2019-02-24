@@ -1,9 +1,9 @@
 module.exports =
-async function addContactTo(user, contact) {
+async function addContactTo(user, contact, socketID) {
     await pushContactTo(user, contact, true)
     await pushContactTo(contact, user, false)
-    emitUpdateContacts(user._id)
-    emitUpdateContacts(contact._id)
+    emitAddContact(user._id, socketID)
+    emitAddContact(contact._id)
 }
 
 async function pushContactTo(user, contact, state) {
@@ -18,12 +18,27 @@ async function pushContactTo(user, contact, state) {
     await user.save()
 }
 
-function emitUpdateContacts(id) {
+function emitAddContact(id, socketID) {
     var clients = global.clients
     clients = clients.filter(client => {
         return client.userID == id
     })
     clients.forEach(client => {
-        client.client.emit('update contacts')
+        if ((socketID && socketID != client.client.id) || !socketID) {
+            // console.log('EMITTING ADD CONTACT')
+            client.client.emit('add_contact', id)
+        }
+    })
+}
+
+function emitUpdateContacts(id, socketID) {
+    var clients = global.clients
+    clients = clients.filter(client => {
+        return client.userID == id
+    })
+    clients.forEach(client => {
+        if ((socketID && socketID != client.client.id) || !socketID) {
+            client.client.emit('update contacts', id)
+        }
     })
 }
