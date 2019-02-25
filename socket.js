@@ -61,6 +61,15 @@ function setupSocket(app) {
                 client.client.emit('messages_read', contactID)
             })
         })
+        socket.on('settings_changed', async (id, username, avatar) => {
+            console.log('SETTINGS CHANGED EVENT')
+            const userContactsClients = await getUserContactsClients(id)
+            for (let index = 0; index < userContactsClients.length; index++) {
+                const element = userContactsClients[index]
+                console.log('EMITTING BOI')
+                element.client.emit('settings_changed', id, username, avatar)
+            }
+        })
         socket.emit('introduce') 
     })
 }

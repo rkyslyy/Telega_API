@@ -22,20 +22,19 @@ function emitAcceptFriend(userID, friendID, socketID) {
     clients = clients.filter(client => {
         return client.userID == userID
     })
+    const online = friendIsOnline(global.clients, friendID)
     clients.forEach(client => {
         if ((socketID && socketID != client.client.id) || !socketID) {
-            // console.log(`EMITTING ACCEPT TO ${client.username}`)
-            client.client.emit('accept_friend', friendID)
+            client.client.emit('accept_friend', friendID, online)
         }
     })
 }
 
-function emitUpdateContacts(userID, friendID) {
-    var clients = global.clients
-    clients = clients.filter(client => {
-        return client.userID == friendID
-    })
-    clients.forEach(client => {
-        client.client.emit('update contacts', userID)
-    })
+function friendIsOnline(clients, friendID) {
+    for (let i = 0; i < clients.length; i++) {
+        const client = clients[i]
+        if (client.userID == friendID)
+            return true
+    }
+    return false
 }
