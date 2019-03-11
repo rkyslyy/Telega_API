@@ -1,21 +1,8 @@
-const Express = require('express')
-const router = Express.Router()
+const router = require('express').Router()
 const User = require('../models/user')
 const auth = require('../middleware/auth')
 
-router.get('/erase', async (req, res) => {
-    const users = await User.find()
-    for (let index = 0; index < users.length; index++) {
-        const user = users[index]
-        user.messages = []
-        user.markModified('messages')
-        await user.save()
-    }
-    res.send('Messages erased!')
-})
-
 router.post('/', auth, async (req, res) => {
-    console.log(req.body)
     const socketID = req.body.socketID
     const myID = req.user.id
     const theirID = req.body.theirID
@@ -66,10 +53,6 @@ function emitUpdateMessages(id, message, socketID) {
     })
     clients.forEach(client => {
         if ((socketID && socketID != client.client.id) || !socketID) {
-            // console.log('emitting')
-            // console.log('ID SENT TO SERVER:', socketID)
-            // console.log('CLIENT ID:', client.client.id)
-            // console.log('')
             client.client.emit('update messages', message)
         }
     })

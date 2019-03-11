@@ -1,5 +1,4 @@
-const Express = require('express')
-const router = Express.Router()
+const router = require('express').Router()
 const User = require('../models/user')
 const nodemailer = require('nodemailer')
 const bcrypt = require('bcryptjs')
@@ -32,14 +31,6 @@ router.get('/me', auth, async (req, res) => {
     }
     res.send({
         user: _.assign(user, {contacts: contacts})
-    })
-})
-
-router.get('/', async (req, res) => {
-    // const users = await User.find()
-    var clients = global.clients
-    res.send({
-        users: 'users'
     })
 })
 
@@ -97,17 +88,6 @@ router.put('/delete_contact', auth, async (req, res) => {
         message: 'Contact deleted!',
         user: _.pick(user, ['email', 'contacts'])
     })
-})
-
-router.get('/delete_all_contacts', async (req, res) => {
-    const users = await User.find()
-    if (!users) return res.status(500).send({error: 'Internal server error'})
-    for (let i = 0; i < users.length; i++) {
-        const user = users[i]
-        user.contacts = []
-        await user.save()
-    }
-    res.send('All contacts erased!')
 })
 
 router.put('/', auth, async (req, res) => {

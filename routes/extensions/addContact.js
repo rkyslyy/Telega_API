@@ -13,7 +13,7 @@ async function pushContactTo(user, contact, state) {
         requestIsMine: state,
         unread: false
     }
-    user.contacts[user.contacts.length] = newContact
+    user.contacts.unshift(newContact)
     user.markModified('contacts')
     await user.save()
 }
@@ -25,7 +25,6 @@ function emitAddContact(id, socketID) {
     })
     clients.forEach(client => {
         if ((socketID && socketID != client.client.id) || !socketID) {
-            // console.log('EMITTING ADD CONTACT')
             client.client.emit('add_contact', id)
         }
     })

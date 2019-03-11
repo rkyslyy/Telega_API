@@ -12,7 +12,11 @@ async function deleteUsersFrom(user, contactID) {
         if (contact.id != contactID) newContacts.push(contact)
     })
     user.contacts = newContacts
+    user.messages = user.messages.filter(message => {
+        return message.storeID != contactID
+    })
     user.markModified('contacts')
+    user.markModified('messages')
     await user.save()
 }
 
@@ -23,8 +27,6 @@ function emitDeleteContacts(firstID, secondID, socketID) {
     })
     clients.forEach(client => {
         if ((socketID && socketID != client.client.id) || !socketID) {
-            // console.log(`EMITTING DELETE TO ${client.username}`)
-            // console.log(socketID)
             client.client.emit('delete_contact', secondID)
         }
     })
